@@ -1,0 +1,18 @@
+
+ // To build the debug version
+ > make -j4
+
+ // To build the release version
+ > make -j4 VERSION=release
+
+ // The makefile saves all outputs (including final product) to /tmp/build.
+ // Prints the location of the target binary
+ > make print-target VERSION=release
+
+ // The run script gives a convenient way to run the debug and release versions
+ > ./run.sh calibrate -sc /aux/Corpora/calibration/images*.png
+
+ // Runs under gdb with the address sanitizer compiled in.
+ > ./run.sh debug calibrate -sc /aux/Corpora/calibration/images*.png
+ 
+
