@@ -430,8 +430,8 @@ bool Matrix::solve (const Matrix &M, FLOAT eps) {
   int32_t* ipiv  = new int32_t[m];
   
   // loop variables
-  int32_t i, icol, irow, j, k, l, ll;
-  FLOAT big, dum, pivinv, temp;
+  int32_t i = 0, icol = 0, irow = 0, j = 0, k = 0, l = 0, ll = 0;
+  FLOAT big = 0.0f, dum = 0.0f, pivinv = 0.0f, temp = 0.0f;
   
   // initialize pivots to zero
   for (j=0;j<m;j++) ipiv[j]=0;
@@ -516,7 +516,7 @@ bool Matrix::lu(int32_t *idx, FLOAT &d, FLOAT eps) {
     exit(0);
   }
   
-  int32_t i,imax,j,k;
+  int32_t i = 0,imax = 0,j = 0,k = 0;
   FLOAT   big,dum,sum,temp;
   FLOAT* vv = (FLOAT*)malloc(n*sizeof(FLOAT)); // vv stores the implicit scaling of each row.
   d = 1.0;

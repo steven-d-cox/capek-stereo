@@ -30,7 +30,7 @@
 #ifndef CALIBRATE_STDINC_HPP
 #define CALIBRATE_STDINC_HPP
 
-#include "config.h"
+#include "../config.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -76,6 +76,8 @@ typedef Eigen::Matrix<double, 8, 1> Vector8d;
 using std::string;
 using std::vector;
 using std::deque;
+
+#define FATAL(msg) { fprintf(stderr, "FATAL %s:%d (%s) %s\n", __FILE__, (int) __LINE__, __FUNCTION__, msg); exit(1); }
 
 #endif
 

@@ -27,5 +27,5 @@ ARG="$1"
 
 [ "$ARG" = "bb" ] && $EXEC -i ../../bb.yml --x-costfn /aux/Corpora/shortest-path-01/0006-l.png /aux/Corpora/shortest-path-01/0006-r.png
 
-[ "$ARG" = "surf-bb" ] && $EXEC -i ../../bb.yml  --x-costfn --x-surf --x-rect --s-hessian 100 --x-disp /aux/Corpora/shortest-path-01/0006-l.png /aux/Corpora/shortest-path-01/0006-r.png
+[ "$ARG" = "surf-bb" ] && $EXEC --show-point-cloud -i ../../calib-files/bb.yml  --x-costfn --x-surf --x-rect --s-hessian 100 --x-disp --d-method elas /aux/Corpora/shortest-path-01/0006-l.png /aux/Corpora/shortest-path-01/0006-r.png
 

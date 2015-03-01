@@ -89,27 +89,15 @@ void print_usage(const char * exec)
          --d-P1           SGBM only, see opencv docs, default is '%d'.
          --d-P2           SGBM only, see opencv docs, default is '%d'.
 
-        disp_method(DISPARITY_METHOD_BM),
-        disp_min_disparity(-39),
-        disp_num_disparities(112),
-        disp_SAD_window_size(9), 
-        disp_12_max_diff(1),
-        disp_prefilter_cap(61), 
-        disp_prefilter_size(5), 
-        disp_texture_threshold(507),
-        disp_uniqueness_ratio(0), 
-        disp_speckle_window_size(0), 
-        disp_speckle_range(9), 
-        disp_full_DP(false),
-        disp_P1(0),
-        disp_P2(0),
-
          // Export options
          --x-undist  Export undistorted images.
          --x-surf    Export surf corner detection images.
          --x-costfn  Export matlab code to draw xEx cost-function. (/tmp/cf.m)
          --x-rect    Export rectified images.    
          --x-disp    Export disparity images.
+
+         // GUI options
+         --show-point-cloud   A crude point-cloud viewer in glut.
 
          // Test options
          --test-E    Test finding 'E'. 
@@ -247,7 +235,7 @@ Params parse_cmd_args(int argc, char * * argv)
             if(arg == "--d-method") { 
                 p.disp_method = -1;
                 string method = safe_cstr(i);
-                for(uint i = 0; i < 2; ++i) 
+                for(uint i = 0; i <= DISPARITY_METHOD_MAX; ++i) 
                     if(method == p.disp_method_name(i)) 
                         p.disp_method = i;
                 if(p.disp_method == -1) {
@@ -255,6 +243,7 @@ Params parse_cmd_args(int argc, char * * argv)
                     fprintf(stderr, "Unknown stereo-corresp method '%s'\n", 
                             method.c_str());
                 }
+                continue;
             }
             if(arg == "--d-min") { p.disp_min_disparity = safe_num(i); continue; }
             if(arg == "--d-num") { p.disp_num_disparities = safe_num(i); continue; }
@@ -269,6 +258,9 @@ Params parse_cmd_args(int argc, char * * argv)
             if(arg == "--d-full-DP") { p.disp_full_DP = safe_num(i); continue; }
             if(arg == "--d-P1") { p.disp_P1 = safe_num(i); continue; }
             if(arg == "--d-P2") { p.disp_P2 = safe_num(i); continue; }
+
+            if(arg == "--show-point-cloud") 
+                { p.show_point_cloud = true; continue; }
 
             if(arg == "--x-undist") { p.export_undistorted = true; continue; }
             if(arg == "--x-surf")   { p.export_surf = true; continue; }
@@ -349,6 +341,7 @@ string Params::disp_method_name(int method_id) const
     switch(method_id) {
     case DISPARITY_METHOD_BM: return "bm";
     case DISPARITY_METHOD_SGBM: return "sgbm";
+    case DISPARITY_METHOD_ELAS: return "elas";
     default:
         fprintf(stderr, "FATAL ERROR, unknown disparity-method-id '%d'\n", 
                 method_id);

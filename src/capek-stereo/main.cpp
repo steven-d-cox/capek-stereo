@@ -5,6 +5,7 @@
 #include "params.hpp"
 #include "stereo-camera-system.hpp"
 #include "camera-matrix-utils.hpp"
+#include "viewer.hpp"
 
 using namespace cv;
 using namespace std;
@@ -34,6 +35,12 @@ int main(int argc, char * * argv)
         if(success) success = stereo.calculate_rectification(params);
         if(success) success = stereo.calculate_disparity(params);
         if(success) success = stereo.calculate_stereo_calibration(params);
+
+        if(success && params.show_point_cloud) {
+            vector<Vector3d> pts_3d;
+            success = stereo.calculate_point_cloud(params, pts_3d);
+            glut_display_cloud(pts_3d);
+        }
 
         printf("\nFinishing with success = %d\n", int(success));
     }

@@ -538,8 +538,8 @@ bool This::calculate_stereo_calibration(const Params& p)
 
     // Populate the corresponding points
     uint n_pts = camera0_pts.size() * camera0_pts[0].size();
-    corresp.clear();
-    corresp.reserve(n_pts);
+    all_corresp.clear();
+    all_corresp.reserve(n_pts);
     uint counter = 0;
     for(uint z = 0; z < camera0_pts.size(); ++z) {
         for(uint i = 0; i < camera0_pts[z].size(); ++i) {
@@ -549,7 +549,7 @@ bool This::calculate_stereo_calibration(const Params& p)
                 u = undistort0(u);
                 v = undistort1(v);
             }
-            corresp.emplace_back(u(0), u(1), v(0), v(1));
+            all_corresp.emplace_back(u(0), u(1), v(0), v(1));
         }
     }
   
@@ -688,7 +688,6 @@ bool This::calculate_stereo_calibration(const Params& p)
         }
         fprintf(fp, "];\n\n");
 
-        //            fprintf(fp, "mesh(ang, ang, scr);\n\n");
         fprintf(fp, "pkg load image\n");
         fprintf(fp, "figure;\n"
                 "surf(azi, inc, log(scr),'EdgeColor', 'None');\n"
@@ -702,19 +701,8 @@ bool This::calculate_stereo_calibration(const Params& p)
         fprintf(fp, "xlabel('azimuth of translation vector')\n");
         fprintf(fp, "ylabel('inclination of translation vector')\n");
         fprintf(fp, "axis([0 360 0 180])\n");        
-        //fprintf(fp, "print('-djpeg', '/tmp/e-mesh-%02d')\n", counter);
         fclose(fp);
     }    
-
-    
-  
-
-     
-    // vector<Vector3d> pts_3d;
-    // pts_3d.reserve(pts_3d_deque.size());
-    // pts_3d.insert(pts_3d.end(), pts_3d_deque.begin(), pts_3d_deque.end());
-    // glut_display_cloud(pts_3d);
-             
 
     return success;
 }
@@ -778,14 +766,8 @@ bool This::calculate_disparity(const Params& p)
             return false;
 
     bool success = true;
-    string method = "";
-    switch(p.disp_method) {
-    case DISPARITY_METHOD_BM: method = "bm"; break;
-    case DISPARITY_METHOD_SGBM: method = "sgbm"; break;
-    default:
-        fprintf(stderr, "Unknown disparity method '%d'\n", p.disp_method);
-        return false;
-    }
+    string method = p.disp_method_name();
+
     printf("Calculating disparity images using '%s'\n", method.c_str()); 
 
     printf(" + min_disparity    = %d\n", p.disp_min_disparity);
@@ -827,6 +809,7 @@ bool This::calculate_disparity(const Params& p)
                          p.disp_speckle_window_size,
                          p.disp_speckle_range);
             break;
+
         case DISPARITY_METHOD_SGBM:
             disparity_sgbm(view0, view1, disp, 
                            p.disp_min_disparity,
@@ -841,6 +824,13 @@ bool This::calculate_disparity(const Params& p)
                            p.disp_P1,
                            p.disp_P2);
             break;
+
+        case DISPARITY_METHOD_ELAS:
+            disparity_elas(view0, view1, disp, p.elas_params);
+            break;
+
+        default:
+            FATAL("Forgot to code disparity method");
         }
 
         // Sanity checks

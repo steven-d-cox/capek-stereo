@@ -14,8 +14,8 @@ OPENCV_LIBS:=-L$(CVD)/lib \
 	-lopencv_nonfree -lopencv_flann -lopencv_features2d
 GLUT_LIBS:=-lGL -lGLU -lglut
 
-DEP_INCLUDES:=-I$(CURDIR)/../libcapek-stereo
-DEP_LIBS:=-lcapek-stereo
+DEP_INCLUDES:=-I$(CURDIR)/../libcapek-stereo -I$(CURDIR)/../libelas
+DEP_LIBS:=-lcapek-stereo -lelas
 
 USE_TRICLOPS=$(shell cat ../libcapek-stereo/config.h | grep USE_TRICLOPS | awk '{ print $$3 }')
 ifeq "$(USE_TRICLOPS)" "1"
@@ -41,7 +41,7 @@ LINK_FLAGS:=-lm -lstdc++ -lpthread $(DEP_LIBS) $(BOOST_LIBS) \
 	$(OPENCV_LIBS) $(GLUT_LIBS) $(POINTGREY_LIB)
 
 # ----------------------------- options
-PCH:=stdinc.hpp
+PCH:=
 MOCD:=
 ADDRESS_SANITIZE:=0
 

@@ -31,6 +31,8 @@
 
 #include "stdinc.hpp"
 
+#include "elas.h"
+
 /**
  * + min_disparity     – Minimum possible disparity value.
  * + num_disparities   – Maximum disparity minus minimum disparity. 
@@ -77,5 +79,9 @@ void disparity_sgbm(const cv::Mat& grey0, const cv::Mat& grey1, cv::Mat& disp,
                     bool full_DP = false,
                     int P1 = 0,
                     int P2 = 0);
+
+// http://www.cvlibs.net/software/libelas/
+void disparity_elas(const cv::Mat& grey0, const cv::Mat& grey1, cv::Mat& disp,
+                    const Elas::parameters& p);
 
 

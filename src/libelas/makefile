@@ -6,35 +6,24 @@
 VERSION ?= debug
 CC:=colorgcc
 
-SRCS:=params.cpp stereo-camera-system.cpp \
-	math-utils.cpp string-utils.cpp \
-	matrix-utils.cpp camera-matrix-utils.cpp \
-	intrinsic.cpp surf-point-pairs.cpp disparity.cpp \
-	nelder-mead.cpp 
-
-CVD:=/usr/local
-
-DEP_INCLUDES:=-I$(CURDIR)/../libelas
+SRCS:=descriptor.cpp  elas.cpp  filter.cpp  main.cpp  matrix.cpp  triangle.cpp
 
 # ----------------------------- 
 CPP_SANITIZE:=
 CPP_COMP_FLAGS:=-m64 -fPIC -Wall -Wno-unused -fmax-errors=4 -msse2 -mssse3
 CPP_DEFINES:=
-CPP_INCLUDES:=-I$(CURDIR) $(DEP_INCLUDES) -I/usr/include/eigen3 -I$(CVD)/include
+CPP_INCLUDES:=-I$(CURDIR)
 
 # ----------------------------- build 
 BUILD_A:=1
-TARGET:=capek-stereo
+TARGET:=elas
 CPP_FLAGS:=$(CPP_COMP_FLAGS) $(CPP_DEFINES) $(CPP_INCLUDES)
 LINK_FLAGS:=
 
 # ----------------------------- options
-PCH:=stdinc.hpp
+PCH:=
 MOCD:=
 ADDRESS_SANITIZE:=0
-
-# ----------------------------- dependent libraries
-DEPENDS_ON:=../libelas
 
 # ----------------------------- 
 

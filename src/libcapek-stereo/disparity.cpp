@@ -30,6 +30,8 @@
 #include "stdinc.hpp"
 #include "disparity.hpp"
 
+#include "elas.h"
+
 using namespace cv;
 using namespace std;
 
@@ -105,4 +107,49 @@ void disparity_sgbm(const Mat& grey0, const Mat& grey1, Mat& disp,
     disp = disp_out;
 }
 
+// http://www.cvlibs.net/software/libelas/
+
+void disparity_elas(const Mat& grey0, const Mat& grey1, Mat& disp,
+                    const Elas::parameters& p)
+{
+    // Sanity check
+    if(grey0.type() != CV_8U || grey1.type() != CV_8U) 
+        FATAL("Expected matrices of type unsigned vector.");
+    if(grey0.size() != grey1.size())
+        FATAL("Size mismatch in input images.");
+
+    // get image width and height
+    int32_t width  = grey0.cols;
+    int32_t height = grey0.rows;
+
+    // Input data
+    uint8_t * ptr0 = const_cast<uint8_t*>(grey0.ptr());
+    uint8_t * ptr1 = const_cast<uint8_t*>(grey1.ptr());
+
+    // allocate memory for disparity images
+    const int32_t dims[3] = { width, height, width}; // bytes per line = width
+    float * D1_data = (float *) malloc(width * height * sizeof(float));
+    float * D2_data = (float *) malloc(width * height * sizeof(float));
+
+    // process
+    // Elas::parameters param;
+    // param.postprocess_only_left = false;
+    // param.disp_min = disp_min;
+    // param.disp_max = disp_max;
+    // param.support_threshold = support_threshold;
+    
+
+    Elas elas(p);
+    elas.process(ptr0, ptr1, D1_data, D2_data, dims);
+
+    Mat disp_out(height, width, CV_32F);
+    uint pos = 0;
+    for(int r = 0; r < height; ++r)
+        for(int c = 0; c < width; ++c)
+            disp_out.at<float>(r, c) = D1_data[pos++];
+    disp = disp_out;
+
+    free(D1_data);
+    free(D2_data);
+}
 

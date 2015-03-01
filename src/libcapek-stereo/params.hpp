@@ -31,8 +31,12 @@
 
 #include "stdinc.hpp"
 
+#include "elas.h"
+
 #define DISPARITY_METHOD_BM 0
 #define DISPARITY_METHOD_SGBM 1
+#define DISPARITY_METHOD_ELAS 2
+#define DISPARITY_METHOD_MAX 2
 
 // Application parameters
 struct Params
@@ -86,6 +90,8 @@ struct Params
     int disp_P1;
     int disp_P2;
 
+    Elas::parameters elas_params;
+
     // Exporting options
     std::string output_dir; // output directory to save images
     bool export_corner_detect;
@@ -94,6 +100,9 @@ struct Params
     bool export_surf;
     bool export_xEx_costfn;
     bool export_disparity;
+
+    // View options
+    bool show_point_cloud; // a crude point-cloud viewer in glut
 
     // Funds testing function
     bool test_find_E;
@@ -140,6 +149,8 @@ struct Params
         disp_P1(0),
         disp_P2(0),
 
+        elas_params(),
+
         output_dir("/tmp"),
         export_corner_detect(true), // only default TRUE
         export_undistorted(false),
@@ -147,6 +158,8 @@ struct Params
         export_surf(false),
         export_xEx_costfn(false),
         export_disparity(false),
+
+        show_point_cloud(false),
 
         test_find_E(false)
     {}
