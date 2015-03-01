@@ -292,41 +292,7 @@ Params parse_cmd_args(int argc, char * * argv)
 	fprintf(stderr, "Size of chessboard squares must be larger than zero.\n"
 		"Dimensions of (%g x %g) implies size of %g.\n\n",
 		p.sq_side, p.sq_side, p.sq_side * p.sq_side);
-    }    
-
-    // Load images into memory...
-    p.images.resize(p.filenames.size());
-    int w, h;
-    for(uint i = 0; i < p.filenames.size(); ++i) {
-        p.images[i] = cv::imread(p.filenames[i].c_str(), 
-                                 CV_LOAD_IMAGE_GRAYSCALE);
-        if(p.images[i].empty()) {
-            arg_error = true;
-            fprintf(stderr, "Failed to load image '%s'\n", 
-                    p.filenames[i].c_str());
-        }
-
-        // Make sure w/h are the same across all images
-        if(i == 0) {
-            w = p.images[i].cols;
-            h = p.images[i].rows;
-        } else {
-            if((w != p.images[i].cols) || (h != p.images[i].rows)) {
-                arg_error = true;
-                fprintf(stderr, "Image '%s' has different dimensions "
-                        "to '%s' (i.e., [%dx%d] != [%dx%d].)\n",
-                        p.filenames[0].c_str(), p.filenames[i].c_str(),
-                        w, h, p.images[i].cols, p.images[i].rows);
-            }
-        }
-
-        // Make sure images are loaded as CV_8U
-        if(p.images[i].type() != CV_8U || p.images[i].depth() != CV_8U) {
-            arg_error = true;
-            fprintf(stderr, "Image '%s' not loaded as CV_8U!\n",
-                    p.filenames[0].c_str());
-        }
-    }
+    }       
 
     p.okay = !arg_error;
 

@@ -581,7 +581,7 @@ static bool find_rectification_helper(const Matrix34d& Po0,const Matrix34d& Po1,
 }
 
 bool find_rectification(const Matrix34d& Po0, const Matrix34d& Po1,//old cameras
-                        double w, double h, // width and height of input image
+                        double ppt_x, double ppt_y, // principal point
                         Matrix34d& Pn0, Matrix34d& Pn1, // new cameras
                         Matrix3d& T0, Matrix3d& T1) // rect homographies
 {
@@ -593,8 +593,8 @@ bool find_rectification(const Matrix34d& Po0, const Matrix34d& Po1,//old cameras
     if(!find_rectification_helper(Po0, Po1, d0, d1, Pn0, Pn1, T0, T1))
         success = false;
    
-    if(w > 0 && h > 0) { // TODO, use ppt
-        Vector3d p(w * 0.5, h * 0.5, 1.0);
+    if(ppt_x > 0 && ppt_y > 0) {
+        Vector3d p(ppt_x, ppt_y, 1.0);
         
         Vector3d px0 = T0 * p;
         Vector3d px1 = T1 * p;

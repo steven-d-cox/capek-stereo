@@ -85,7 +85,7 @@ uint find_quadrant(Vector3d e, uint w, uint h);
 // Find rectification following Andrea Fusiello's Epipolar Rectification Toolkit
 // This wil FAIL if the epipoles are inside (or close to) either image
 bool find_rectification(const Matrix34d& Po0, const Matrix34d& Po1,//old cameras
-                        double w, double h, // width and height of input image
+                        double ppt_x, double ppt_y, // principal point
                         Matrix34d& Pn0, Matrix34d& Pn1, // new cameras
                         Matrix3d& T0, Matrix3d& T1); // rect homographies
 

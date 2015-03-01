@@ -36,7 +36,8 @@
 // Matrices used in calibration
 class StereoCameraSystem
 {
-private:    
+public:  // Please treat all variables as READ ONLY
+
     // TRUE when the stereo has been loaded from file
     bool is_loaded; 
 
@@ -76,12 +77,20 @@ private:
     //Matrix34d R0, R1;   // Rectification camera matrices   
     Matrix3d T0, T1;    // Rectification homographies
 
-    // These derived values are never saved:
+    // undistort rectification maps
     cv::Mat map1l, map2l, map1r, map2r; // undistort maps
 
-    vector<cv::Mat> disparities; // disparity maps
+    // Images //    
+    vector<cv::Mat> images;           // raw input images
+    vector<cv::Mat> undistort_images; // 1 per input image
+    vector<cv::Mat> surf_images;      // 1 per pair of images
+    cv::Mat inlier_image;             // see bug description
+    vector<cv::Mat> rect_images;      // 1 per input image
+    vector<cv::Mat> disparity_images; // 1 per pair of images 
 
+private:
     void init();
+    bool load_raw_images(const Params& p);
 
 public:
     StereoCameraSystem();
@@ -102,7 +111,9 @@ public:
     bool calculate_stereo_calibration(const Params& p);
     bool calculate_rectification(const Params& p);
     bool calculate_disparity(const Params& p);
-    bool calculate_point_cloud(const Params& p, vector<Vector3d>& pts);
+    bool calculate_point_cloud(const Params& p, 
+                               const cv::Mat& disparity,
+                               vector<Vector3d>& pts);
 
     // Boolean function say if the given parameter has been set
     bool has_corner0_pts() const { return corner0_pts.size() > 0; }
@@ -136,6 +147,6 @@ public:
         return has_K0()&&has_K1()&&has_D0()&&has_D1()&&has_U0()&&has_U1(); }
     bool has_stereo_calib() const { return has_E()&&has_P0()&&has_P1(); }
     bool has_rectification() const { return has_T0()&&has_T1();}
-    bool has_disparity() const { return disparities.size() > 0; }
+    bool has_disparity() const { return disparity_images.size() > 0; }
 };
 

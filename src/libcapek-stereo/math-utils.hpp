@@ -45,7 +45,10 @@ inline void normalize_hom3_line(Vector3d& X);
 
 inline double normalise_angle(double theta);
 
+// ---------------------------------------------- Closest point between 3d lines
 
+Vector3d intersect_rays(const Vector3d& u0, const Vector3d& u1,
+                        const Vector3d& v0, const Vector3d& v1);
 
 
 

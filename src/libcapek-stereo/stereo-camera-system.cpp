@@ -123,8 +123,6 @@ void This::undistort_im1(const cv::Mat& in, cv::Mat& out) const
 
 // ------------------------------------------------------------------- Load/Save
 
-static const char * key_camera0_pts = "checkerboard_points_camera_0";
-static const char * key_camera1_pts = "checkerboard_points_camera_1";
 static const char * key_nx = "checkerboard_nx";
 static const char * key_ny = "checkerboard_ny";
 static const char * key_square_size = "square_size";
@@ -154,17 +152,8 @@ bool This::load(const string& filename)
 
 #define HAS(key) (!(fs[key].empty()))
 
-        // Sanity check
-        if((HAS(key_camera0_pts) || HAS(key_camera1_pts)) 
-            && !(HAS(key_nx) && HAS(key_ny))){
-            fprintf(stderr, "Must have 'nx', 'ny' when loading camera pts\n");
-            return false;
-        }
-
-        Mat cam0_pts, cam1_pts, cv_K0, cv_K1, cv_D0, cv_D1, cv_U0, cv_U1;
+        Mat cv_K0, cv_K1, cv_D0, cv_D1, cv_U0, cv_U1;
         Mat cv_E;
-        if(HAS(key_camera0_pts)) fs[key_camera0_pts] >> cam0_pts;
-        if(HAS(key_camera1_pts)) fs[key_camera1_pts] >> cam1_pts;
         if(HAS(key_nx)) fs[key_nx] >> nx;
         if(HAS(key_ny)) fs[key_ny] >> ny;
         if(HAS(key_square_size)) fs[key_square_size] >> square_size;
@@ -179,29 +168,6 @@ bool This::load(const string& filename)
         if(HAS(key_rms_KD0)) fs[key_rms_KD0] >> rms_KD0;
         if(HAS(key_rms_KD1)) fs[key_rms_KD1] >> rms_KD1;
         if(HAS(key_E)) { fs[key_E] >> cv_E; to_matrix3d(cv_E, E); }
-
-        // Pack camera0_pts/camera1_pts
-        auto set_camera_pts = [] (const Mat& m, 
-                                  vector< vector<Vector2d> >& pts,
-                                  int nx, int ny) {
-            pts.clear();
-            int n_per_image = nx * ny;
-            int n_images = m.rows / n_per_image;
-            if(m.rows % n_per_image)
-                throw runtime_error("nx,ny does not agree with camerapts size");
-            pts.resize(n_images);
-            int row = 0;
-            for(int z = 0; z < n_images; ++z) {
-                pts[z].resize(n_per_image);
-                for(int i = 0; i < n_per_image; ++i) {
-                    pts[z][i] = Vector2d(m.at<double>(row, 0), 
-                                         m.at<double>(row, 1));
-                    row++;
-                }
-            }
-        };
-        if(HAS(key_camera0_pts)) set_camera_pts(cam0_pts, camera0_pts, nx, ny);
-        if(HAS(key_camera1_pts)) set_camera_pts(cam1_pts, camera1_pts, nx, ny);
 
 #undef HAS
 
@@ -225,8 +191,6 @@ bool This::save(const string& filename) const
             return false;
         }
 
-        if(has_camera0_pts()) fs << key_camera0_pts << to_mat_64(camera0_pts);
-        if(has_camera1_pts()) fs << key_camera1_pts << to_mat_64(camera1_pts);
         if(has_nx()) fs << key_nx << nx;
         if(has_ny()) fs << key_ny << ny;
         if(has_square_size()) fs << key_square_size << square_size;
@@ -247,6 +211,48 @@ bool This::save(const string& filename) const
     }
 
     return true;
+}
+
+// ------------------------------------------------------------- Load raw images
+
+bool This::load_raw_images(const Params& p)
+{
+    bool success = true;
+
+    images.resize(p.filenames.size());
+    int w, h;
+    for(uint i = 0; i < p.filenames.size(); ++i) {
+        images[i] = cv::imread(p.filenames[i].c_str(), 
+                               CV_LOAD_IMAGE_GRAYSCALE);
+        if(images[i].empty()) {
+            success = false;
+            fprintf(stderr, "Failed to load image '%s'\n", 
+                    p.filenames[i].c_str());
+        }
+
+        // Make sure w/h are the same across all images
+        if(i == 0) {
+            w = images[i].cols;
+            h = images[i].rows;
+        } else {
+            if((w != images[i].cols) || (h != images[i].rows)) {
+                success = false;
+                fprintf(stderr, "Image '%s' has different dimensions "
+                        "to '%s' (i.e., [%dx%d] != [%dx%d].)\n",
+                        p.filenames[0].c_str(), p.filenames[i].c_str(),
+                        w, h, images[i].cols, images[i].rows);
+            }
+        }
+
+        // Make sure images are loaded as CV_8U
+        if(images[i].type() != CV_8U || images[i].depth() != CV_8U) {
+            success = false;
+            fprintf(stderr, "Image '%s' not loaded as CV_8U!\n",
+                    p.filenames[0].c_str());
+        }
+    }
+
+    return success;
 }
 
 // ------------------------------------------------------- Intrinsic Calibration
@@ -270,10 +276,13 @@ bool This::calculate_intrinsic_calibration(const Params& p)
         square_size = p.sq_side; 
     }
 
+    // -- (*) -- Load images
+    success = load_raw_images(p);
+
     // -- (*) -- Set width and height of input images if possible
     if(success && p.filenames.size() > 0) {
-        this->w = p.images[0].cols;
-        this->h = p.images[0].rows;
+        this->w = images[0].cols;
+        this->h = images[0].rows;
     }
 
     // -- (*) -- Get corners if that's where we're at
@@ -436,22 +445,28 @@ bool This::calculate_intrinsic_calibration(const Params& p)
     }
 
     // -- (*) -- Undistort input images if any are supplied
-    if(success && p.export_undistorted) {
-        printf(" + Output undistorted images.\n");
+    if(success) {
+        if(p.export_undistorted)
+            printf(" + Output undistorted images.\n");
 
-        Mat rview;
+        this->undistort_images.resize(images.size());
+
         int counter = 0;
         for(const auto& filename: p.filenames) {
-            const Mat& view = p.images[counter];
+            const Mat& view = images[counter];
+            Mat& rview = this->undistort_images[counter];
+
             int image_number = counter / 2;
             bool is_left = counter % 2 == 0;
             vector<Vector2d> pts;
             if(is_left) {
                 this->undistort_im0(view, rview);
-                pts = camera0_pts[image_number];
+                if(int(corner0_pts.size()) < image_number)
+                    pts = corner0_pts[image_number];
             } else {
                 this->undistort_im1(view, rview);
-                pts = camera1_pts[image_number];
+                if(int(corner1_pts.size()) < image_number)
+                    pts = corner1_pts[image_number];
             }
 
             // Draw points onto this image
@@ -460,10 +475,13 @@ bool This::calculate_intrinsic_calibration(const Params& p)
                 circle(rview, Point2f(x(0),x(1)),1,Scalar(0, 0, 255),1);
             }
 
-            string outname = make_outname(filename, p.output_dir,
-                                          "undistorted-", ".png");
-            printf(" + %s\n", outname.c_str());
-            imwrite(outname, rview);            
+            if(p.export_undistorted) {
+                string outname = make_outname(filename, p.output_dir,
+                                              "undistorted-", ".png");
+                printf(" + %s\n", outname.c_str());
+                imwrite(outname, rview);            
+            }
+
             counter++;
         }
     }
@@ -496,17 +514,23 @@ bool This::surf_corresponding_points(const Params& p)
     camera0_pts.resize(n_pairs);
     camera1_pts.resize(n_pairs);
     
+    this->surf_images.resize(n_pairs);
+
     for(uint i = 0; i < n_pairs; ++i) {
-        string outfile = "";
-        if(p.export_surf) 
-            outfile = make_outname(p.filenames[i*2+0], p.output_dir, 
-                                   "surf-corners-", ".png");
-        surf_corresponding_pairs(p.images[i*2+0],
-                                 p.images[i*2+1],
+        Mat& rview = this->surf_images[i];
+            
+        surf_corresponding_pairs(images[i*2+0],
+                                 images[i*2+1],
                                  camera0_pts[i],
                                  camera1_pts[i],
                                  p.surf_min_hessian, p.surf_dist_ratio,
-                                 outfile);
+                                 rview);
+
+        if(p.export_surf) {
+            string outfile = make_outname(p.filenames[i*2+0], p.output_dir, 
+                                          "surf-corners-", ".png");
+            imwrite(outfile, rview);
+        }
     }
 
     // Make sure we have the correct width/height
@@ -570,12 +594,18 @@ bool This::calculate_stereo_calibration(const Params& p)
             if(inliers[i] == true)
                 corresp.push_back(all_corresp[i]);
 
+        // There is a bug here... we don't know which inliers belong
+        // to which inlier images... so just make one
+        if(images.size() >= 2) {
+            draw_and_save_corresp(images[0], images[1],
+                                  corresp, inlier_image);
+        }
+
         // Export
         if(p.export_surf) {
             string outfile = make_outname(p.filenames[0], p.output_dir, 
                                           "surf-inliers-", ".png");
-            draw_and_save_corresp(p.images[0], p.images[1],
-                                  corresp, outfile);
+            imwrite(outfile, inlier_image);
         }
 
         printf("Estimate F and E.\n");
@@ -727,25 +757,38 @@ bool This::calculate_rectification(const Params& p)
         success = find_rectification_hz((p.apply_undistort ? U0 : K0),
                                         (p.apply_undistort ? U1 : K1),
                                         KP0, KP1, corresp, T0, T1);
-    }        
+    }      
+
+    if(success) { // The rectifications probably spill over image...
+        Matrix3d SR = calc_transform_H(w, h, T0, T1, w, h);
+        T0 = SR * T0;
+        T1 = SR * T1;
+    }
 
     if(success) 
         printf(" + rect-err = %g\n", rect_mse(T0, T1, corresp));    
 
+    if(success) { // calculating recitication images
+        this->rect_images.resize(images.size());
+        int counter = 0;
+        for(const auto& filename: p.filenames) {
+            const Mat& view = images[counter];
+            Mat& rview = this->rect_images[counter];
+            bool is_left = counter++ % 2 == 0;
+            if(is_left)
+                warpPerspective(view, rview, to_mat_64(T0), cv::Size(w, h));
+            else
+                warpPerspective(view, rview, to_mat_64(T1), cv::Size(w, h));
+        }
+    }
+
     // What do the rectifications look like?
     if(success && p.export_rectified && p.filenames.size() > 0) { 
         printf("Saving %d rectified images:\n", int(p.filenames.size()));
-        Mat rview;            
         int counter = 0;
         for(const auto& filename: p.filenames) {
-            const Mat& view = p.images[counter];
-            bool is_left = counter++ % 2 == 0;
-
-            if(is_left)
-                rview = straight_warp(view, T0, w, h);
-            else
-                rview = straight_warp(view, T1, w, h);
-        
+            const Mat& view = images[counter];
+            const Mat& rview = rect_images[counter];        
             string outname = make_outname(filename, p.output_dir,
                                           "rectified-", ".png");
             printf(" + %s\n", outname.c_str());
@@ -786,14 +829,14 @@ bool This::calculate_disparity(const Params& p)
     printf(" + P2               = %d\n", p.disp_P1);
 
     uint n_pairs = p.filenames.size() / 2;
-    disparities.resize(n_pairs);
+    disparity_images.resize(n_pairs);
 
     // How many pairs of images
     for(uint i = 0; i < n_pairs; ++i) {
             
-        Mat view0 = straight_warp(p.images[i*2+0], T0, w, h);
-        Mat view1 = straight_warp(p.images[i*2+1], T1, w, h);
-        Mat& disp = disparities[i];
+        const Mat& view0 = rect_images[i*2+0];
+        const Mat& view1 = rect_images[i*2+1];
+        Mat& disp = disparity_images[i];
 
         switch(p.disp_method) {
         case DISPARITY_METHOD_BM:
@@ -849,7 +892,7 @@ bool This::calculate_disparity(const Params& p)
             string prefix = string("disparity-") + method + "-";
             string outname = make_outname(p.filenames[i*2+0], p.output_dir,
                                           prefix, ".png");
-            normalize(disparities[i], disp8, 0, 255, CV_MINMAX, CV_8U);
+            normalize(disparity_images[i], disp8, 0, 255, CV_MINMAX, CV_8U);
             printf(" + %s\n", outname.c_str());
             imwrite(outname.c_str(), disp8);
         }
@@ -859,7 +902,9 @@ bool This::calculate_disparity(const Params& p)
     return success;
 }
 
-bool This::calculate_point_cloud(const Params& p, vector<Vector3d>& pts)
+bool This::calculate_point_cloud(const Params& p, 
+                                 const Mat& disparity,
+                                 vector<Vector3d>& pts)
 {
     bool success = true;
 
@@ -869,96 +914,60 @@ bool This::calculate_point_cloud(const Params& p, vector<Vector3d>& pts)
 
     deque<Vector3d> pts_3d_deque;
 
-    printf("Calculating point clouds.\n");
+    printf("Calculating point cloud.\n");
 
     // undistort
     Matrix3d T0_inv = T0.inverse();
     Matrix3d T1_inv = T1.inverse();
 
+    // triangulate is slow (because of SVD)       
     // normalize
     Matrix3d K0_inv = p.apply_undistort ? U0.inverse() : K0.inverse();
-    Matrix3d K1_inv = p.apply_undistort ? U0.inverse() : K1.inverse();
+    Matrix3d K1_inv = p.apply_undistort ? U1.inverse() : K1.inverse();
 
     // rotation
+    Matrix3d R = P1.block(0, 0, 3, 3).inverse(); // from P0 => P1
 
     // undistort => normalize => rotate => centre
     Matrix3d A0 = K0_inv * T0_inv;
-    Matrix3d A1 = K1_inv * T1_inv;
+    Matrix3d A1 = R * K1_inv * T1_inv;
 
-    for(uint i = 0; i < disparities.size(); ++i) {
-        const Mat& disp = disparities[i];
+    Vector3d c0 = from_hom4(null(KP0)); // Should be (0, 0, 0)
+    Vector3d c1 = from_hom4(null(KP1));
 
-        const Mat& grey0 = p.images[i*2+0];
-        const Mat& grey1 = p.images[i*2+1];
+    // The fast method would get the two rays -- starting at the camera
+    // centres, and then the direction of the rays are given by
+    // Vector3d n0 = A0 * x0;
+    // Vector3d n1 = A1 * x1;
+    // Then find the closest intersection point
+    // Fix implementation is a TODO item.
 
-        string outname = make_outname(p.filenames[i*2+0], p.output_dir,
-                                      "points-", ".text");
-        printf(" + Saving '%s'\n", outname.c_str());
-        FILE * fp = fopen(outname.c_str(), "w");
-        if(fp == NULL) {
-            fprintf(stderr, "Failed to open '%s' for writing\n",
-                    outname.c_str());
-            success = false;
-            continue;
+    const Mat& disp = disparity;
+
+    const double min_disparity = p.disp_min_disparity;
+
+    for(int y = 0; y < h; ++y) {
+        for(int x = 0; x < w; ++x) {
+            double dx = disp.at<float>(y, x);
+            if(dx < min_disparity) // out of range
+                continue;
+
+            Vector3d x0(x,      y, 1.0); // left-image co-ordinate
+            Vector3d x1(x - dx, y, 1.0); // right-image co-ordinate
+
+            Vector3d X = triangulate(KP0, KP1, 
+                                     from_hom3(T0_inv * x0),
+                                     from_hom3(T1_inv * x1));
+
+            // Vector3d X_ = intersect_rays(c0, A0 * x0 - c0,
+            //                              c1, A1 * x1 - c1);
+
+            // cout << "X = " << X.transpose() 
+            //      << ", = " << X_.transpose();
+            // printf(", DIFF = %g\n", (X - X_).norm());
+
+            pts_3d_deque.push_back(X);
         }
-
-        const double min_disparity = p.disp_min_disparity;
-
-        for(int y = 0; y < h; ++y) {
-            for(int x = 0; x < w; ++x) {
-                double dx = disp.at<float>(y, x);
-                if(dx < min_disparity) // out of range
-                    continue;
-
-                Vector3d x0(x,      y, 1.0); // left-image co-ordinate
-                Vector3d x1(x - dx, y, 1.0); // right-image co-ordinate
-
-                Vector3d X = triangulate(KP0, KP1, 
-                                         from_hom3(T0_inv * x0),
-                                         from_hom3(T1_inv * x1));
-
-                pts_3d_deque.push_back(X);
-
-                fprintf(fp, "%g %g %g\n", X(0), X(1), X(2));
-                    
-                if(false) {
-                    Vector3d X0 = A0 * x0;
-                    Vector3d X1 = A1 * x1;
-
-                    Vector3d corner_0006_l(346, 413, 1);
-                    Vector3d XX = T0.inverse() * x0;
-                    if(((XX/XX(2)) - corner_0006_l).norm() < 1.5) {
-                        printf("----\n");
-                        printf("dx = %g\n", dx);
-                        printf("---------------------\n");
-                        cout << "x0 = " << x0.transpose() << endl;
-                        cout << "x1 = " << x1.transpose() << endl;
-                        cout << endl;
-                        cout << "X0 = " << from_hom3(T0.inverse() * x0).transpose() << endl;
-                        cout << "X1 = " << from_hom3(T1.inverse() * x1).transpose() << endl;
-
-                        Vector3d X = triangulate(KP0, KP1, 
-                                                 from_hom3(T0.inverse() * x0),
-                                                 from_hom3(T1.inverse() * x1));
-                        Vector3d z0 = KP0 * to_hom4(X);
-                        Vector3d z1 = KP1 * to_hom4(X);
-
-                        cout << "X  = " << X.transpose() << endl;
-                        cout << "z0 = " << from_hom3(z0).transpose() << endl;
-                        cout << "z1 = " << from_hom3(z1).transpose() << endl;
-
-                        cout << endl;
-                        cout << "n0 = " << (X0 / X0(2)).transpose() << endl;
-                        cout << "n1 = " << (X1 / X1(2)).transpose() << endl;
-                        cout << endl;
-                        cout << endl;
-                        cout << endl;
-                    }
-                }
-            }
-        }
-
-        fclose(fp);
     }
 
     pts.resize(pts_3d_deque.size());

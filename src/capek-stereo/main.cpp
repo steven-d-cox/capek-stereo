@@ -3,6 +3,7 @@
 
 #include "stdinc.hpp"
 #include "params.hpp"
+#include "string-utils.hpp"
 #include "stereo-camera-system.hpp"
 #include "camera-matrix-utils.hpp"
 #include "viewer.hpp"
@@ -17,6 +18,7 @@ int main(int argc, char * * argv)
     srand(time(NULL));
 
     StereoCameraSystem stereo;
+    vector<Vector3d> pts_3d;
 
     auto params = parse_cmd_args(argc, argv);
     if(!params.okay) {
@@ -36,9 +38,30 @@ int main(int argc, char * * argv)
         if(success) success = stereo.calculate_disparity(params);
         if(success) success = stereo.calculate_stereo_calibration(params);
 
+        for(uint i = 0; i < stereo.disparity_images.size() && success; ++i) {
+            pts_3d.clear();
+            success = stereo.calculate_point_cloud(params, 
+                                                   stereo.disparity_images[i],
+                                                   pts_3d);
+            if(success) {
+                string outname = make_outname(params.filenames[i*2+0], 
+                                              params.output_dir,
+                                              "points-", ".text");
+                printf(" + Saving '%s'\n", outname.c_str());
+                FILE * fp = fopen(outname.c_str(), "w");
+                if(fp == NULL) {
+                    fprintf(stderr, "Failed to open '%s' for writing\n",
+                            outname.c_str());
+                    success = false;
+                    continue;
+                }
+                for(const auto& X: pts_3d)                
+                    fprintf(fp, "%g %g %g\n", X(0), X(1), X(2));
+                fclose(fp);                    
+            }
+        }
+        
         if(success && params.show_point_cloud) {
-            vector<Vector3d> pts_3d;
-            success = stereo.calculate_point_cloud(params, pts_3d);
             glut_display_cloud(pts_3d);
         }
 

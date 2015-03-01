@@ -50,7 +50,6 @@ struct Params
 
     // Input filenames -- should all be images
     std::vector<std::string> filenames;
-    std::vector<cv::Mat> images; // loaded images (derived)
 
     // Major functions to run
     bool recalc_K;
@@ -115,7 +114,6 @@ struct Params
           output_filename("camera-calib.yml"),
 
           filenames(),
-          images(),
 
           recalc_K(false),
           recalc_F(false),

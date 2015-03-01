@@ -30,4 +30,35 @@
 #include "stdinc.hpp"
 #include "math-utils.hpp"
 
+// Adapted from:
+// http://geomalgorithms.com/a07-_distance.html
+Vector3d intersect_rays(const Vector3d& u0, const Vector3d& u1,
+                        const Vector3d& v0, const Vector3d& v1)
+{
+#define SMALL_NUM 1e-8
+
+    Vector3d u = u1 - u0;
+    Vector3d v = v1 - v0;
+    Vector3d w = u0 - v0;
+
+    double   a = u.dot(u);     // always >= 0     
+    double   b = u.dot(v);
+    double   c = v.dot(v);     // always >= 0
+    double   d = u.dot(w);
+    double   e = v.dot(w);
+    double   D = a*c - b*b;    // always >= 0
+    double   sc, tc;
+
+    // compute the line parameters of the two closest points
+    if (D < SMALL_NUM) {          // the lines are almost parallel
+        sc = 0.0;
+        tc = (b>c ? d/b : e/c);    // use the largest denominator
+    } else {
+        sc = (b*e - c*d) / D;
+        tc = (a*e - b*d) / D;
+    }
+
+    Vector3d ret = 0.5 * (u0 + (sc * u) + v0 + (tc * v));
+    return ret;
+}
 

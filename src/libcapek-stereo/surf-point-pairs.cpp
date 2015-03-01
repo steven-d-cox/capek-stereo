@@ -46,7 +46,7 @@ void surf_corresponding_pairs(const Mat& mat0, const Mat& mat1,
                               vector<Vector2d>& pts0, 
                               vector<Vector2d>& pts1,
                               int min_hessian, double dist_ratio,
-                              const string& outfile)
+                              Mat& out)
 {
     SurfFeatureDetector detector(min_hessian);
     SurfDescriptorExtractor extractor;
@@ -91,20 +91,20 @@ void surf_corresponding_pairs(const Mat& mat0, const Mat& mat1,
         pts1.push_back(Vector2d(p1.x, p1.y));
     }
 
-    // Export, if applicable
-    if(outfile != "") {
+    // Export
+    {
         vector<Vector4d> corresp;
         corresp.resize(pts0.size());
         for(uint i = 0; i < corresp.size(); ++i)
             corresp[i] = Vector4d(pts0[i](0), pts0[i](1),
                                   pts1[i](0), pts1[i](1));
-        draw_and_save_corresp(mat0, mat1, corresp, outfile);
+        draw_and_save_corresp(mat0, mat1, corresp, out);
     }
 }
 
 void draw_and_save_corresp(const Mat& mat0, const Mat& mat1,
                            const vector<Vector4d>& corresp,
-                           const string& outfile)
+                           Mat& out)
 {
     vector<KeyPoint> keypoints0, keypoints1;
     vector<DMatch> good_matches; // good matches
@@ -120,15 +120,12 @@ void draw_and_save_corresp(const Mat& mat0, const Mat& mat1,
         good_matches[i] = DMatch(i, i, 0);
     }    
 
-    Mat img_matches;
     drawMatches(mat0, keypoints0, 
                 mat1, keypoints1,
                 good_matches, 
-                img_matches, Scalar::all(-1), Scalar::all(-1),
+                out, Scalar::all(-1), Scalar::all(-1),
                 vector<char>(), 
-                DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-    
-    imwrite(outfile, img_matches);
+                DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);    
 }
 
  

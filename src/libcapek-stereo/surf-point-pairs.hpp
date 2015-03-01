@@ -35,9 +35,9 @@ void surf_corresponding_pairs(const cv::Mat& mat0, const cv::Mat& mat1,
                               vector<Vector2d>& pts0, 
                               vector<Vector2d>& pts1,
                               int min_hessian, double dist_ratio,
-                              const string& outfile = "");
+                              cv::Mat& out);
 
 void draw_and_save_corresp(const cv::Mat& mat0, const cv::Mat& mat1,
                            const vector<Vector4d>& corresp,
-                           const string& outfile);
+                           cv::Mat& out);
  
