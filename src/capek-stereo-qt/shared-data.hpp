@@ -30,23 +30,72 @@
 // policies, either expressed or implied, of the FreeBSD Project.
 
 #include "stdinc.hpp"
+#include "qt-includes.hpp"
 #include "params.hpp"
 #include "stereo-camera-system.hpp"
 
 #include <mutex>
 #include <atomic>
 
-struct SharedData
+class QImage;
+
+class SharedData : public QObject
 {
+    Q_OBJECT
+    ;
+
+public:
     std::mutex padlock;        // Read/write access to all members should be
                                // guarded by this mutex. Make sure you use
                                // a lockguard (because of RAII)    
     // e.g., std::lock_guard<std::mutex> lock(padlock);
 
     std::atomic<bool> quit;    // tells worker thread to end when set to TRUE
-    Params params;             // parameter block used by StereoCameraSystem
-    StereoCameraSystem stereo; // actual stereo data
 
-    SharedData() : padlock(), quit(false), params(), stereo() {}
+    std::atomic<bool> intrinsics_dirty, 
+        surf_dirty, 
+        stereo_calibration_dirty,
+        rectification_dirty, 
+        disparity_dirty;
+
+    Params params;             // parameter block used by StereoCameraSystem
+
+    // Calulated data...
+    QImage * im0, * im1;
+    QImage * undistort0, * undistort1;
+    QImage * surf, * inliers;
+    QImage * rect0, * rect1;
+    QImage * disparity;
+
+    vector<Vector3d> pts_3d;
+
+    // Constructors
+    SharedData();
+    ~SharedData();
+
+    // No 'accidents'
+    SharedData(const SharedData&) = delete; 
+    SharedData(const SharedData&&) = delete; 
+    void operator=(const SharedData&) = delete;
+    void operator=(const SharedData&&) = delete;
+
+    void worker_thread();
+
+private:
+    // These 'set' methods _must_ be called from the worker thread _only_
+    void set_intrinsic_results(const StereoCameraSystem& stereo);
+    void set_surf_results(const StereoCameraSystem& stereo);
+    void set_stereo_calibration_results(const StereoCameraSystem& stereo);
+    void set_rectification_results(const StereoCameraSystem& stereo);
+    void set_disparity_results(const StereoCameraSystem& stereo);
+    void set_point_cloud_results(const vector<Vector3d>& pts);
+
+signals:
+    void intrinsics_updated();
+    void surf_updated();
+    void stereo_calibration_updated();
+    void rectification_updated();
+    void disparity_updated();
+    void point_cloud_updated();
 };
 

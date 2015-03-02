@@ -558,7 +558,7 @@ bool This::calculate_stereo_calibration(const Params& p)
         fprintf(stderr, "ERROR: stereo calibration can only proceed "
                 "with an even number of images\n");
         return false;
-    }
+    }    
 
     // Populate the corresponding points
     uint n_pts = camera0_pts.size() * camera0_pts[0].size();
@@ -576,6 +576,12 @@ bool This::calculate_stereo_calibration(const Params& p)
             all_corresp.emplace_back(u(0), u(1), v(0), v(1));
         }
     }
+
+    if(all_corresp.size() < 10) {
+        fprintf(stderr, "ERROR: Cowardly refusing to calculate point cloud with"
+                " fewer than 10 corresponding pairs\n");
+        return false;
+    }
   
     if(success) { // Apply the 8-point algorithm to get an initial estimate of F
         
@@ -589,6 +595,7 @@ bool This::calculate_stereo_calibration(const Params& p)
             F = RANSAC_F(all_corresp, inliers);
         }
 
+        corresp.clear();
         corresp.reserve(inliers.size());
         for(uint i = 0; i < inliers.size(); ++i)
             if(inliers[i] == true)
@@ -813,20 +820,67 @@ bool This::calculate_disparity(const Params& p)
 
     printf("Calculating disparity images using '%s'\n", method.c_str()); 
 
-    printf(" + min_disparity    = %d\n", p.disp_min_disparity);
-    printf(" + num_disparities  = %d\n", p.disp_num_disparities);
-    printf(" + SAD_window_size  = %d\n", p.disp_SAD_window_size);
-    printf(" + 12_max_diff      = %d\n", p.disp_12_max_diff);
-    printf(" + prefilter_cap    = %d\n", p.disp_prefilter_cap);
-    printf(" + prefilter_size   = %d\n", p.disp_prefilter_size);
-    printf(" + texture_threshold= %d\n", p.disp_texture_threshold);
-    printf(" + uniqueness_ratio = %d\n", p.disp_uniqueness_ratio);
-    printf(" + speckle_window_sz= %d\n", p.disp_speckle_window_size);
-    printf(" + speckle_range    = %d\n", p.disp_speckle_range);
-    printf(" + min_disparity    = %d\n", p.disp_min_disparity);
-    printf(" + full_DP          = %d\n", int(p.disp_full_DP));
-    printf(" + P1               = %d\n", p.disp_P1);
-    printf(" + P2               = %d\n", p.disp_P1);
+    if(p.disp_method == DISPARITY_METHOD_BM) {
+        printf(" + min_disparity    = %d\n", p.disp_min_disparity);
+        printf(" + num_disparities  = %d\n", p.disp_num_disparities);
+        printf(" + SAD_window_size  = %d\n", p.disp_SAD_window_size);
+        printf(" + 12_max_diff      = %d\n", p.disp_12_max_diff);
+        printf(" + prefilter_cap    = %d\n", p.disp_prefilter_cap);
+        printf(" + prefilter_size   = %d\n", p.disp_prefilter_size);
+        printf(" + texture_threshold= %d\n", p.disp_texture_threshold);
+        printf(" + uniqueness_ratio = %d\n", p.disp_uniqueness_ratio);
+        printf(" + speckle_window_sz= %d\n", p.disp_speckle_window_size);
+        printf(" + speckle_range    = %d\n", p.disp_speckle_range);
+        printf(" + min_disparity    = %d\n", p.disp_min_disparity);
+    } else if(p.disp_method == DISPARITY_METHOD_SGBM) {
+        printf(" + min_disparity    = %d\n", p.disp_min_disparity);
+        printf(" + num_disparities  = %d\n", p.disp_num_disparities);
+        printf(" + SAD_window_size  = %d\n", p.disp_SAD_window_size);
+        printf(" + 12_max_diff      = %d\n", p.disp_12_max_diff);
+        printf(" + prefilter_cap    = %d\n", p.disp_prefilter_cap);
+        printf(" + prefilter_size   = %d\n", p.disp_prefilter_size);
+        printf(" + texture_threshold= %d\n", p.disp_texture_threshold);
+        printf(" + uniqueness_ratio = %d\n", p.disp_uniqueness_ratio);
+        printf(" + speckle_window_sz= %d\n", p.disp_speckle_window_size);
+        printf(" + speckle_range    = %d\n", p.disp_speckle_range);
+        printf(" + min_disparity    = %d\n", p.disp_min_disparity);
+        printf(" + full_DP          = %d\n", int(p.disp_full_DP));
+        printf(" + P1               = %d\n", p.disp_P1);
+        printf(" + P2               = %d\n", p.disp_P1);
+    } else if(p.disp_method == DISPARITY_METHOD_ELAS) {
+#define DISPLAY_INT(field) {printf(" + %s= %d\n", #field,p.elas_params.field);}
+#define DISPLAY_NUM(field) {printf(" + %s= %g\n", #field,p.elas_params.field);}
+#define DISPLAY_CB(field)  \
+        { printf(" + %s= %s\n", #field, p.elas_params.field ? "true":"false");}
+
+        DISPLAY_INT(disp_min);              
+        DISPLAY_INT(disp_max);              
+        DISPLAY_NUM(support_threshold);     
+        DISPLAY_INT(support_texture);       
+        DISPLAY_INT(candidate_stepsize);    
+        DISPLAY_INT(incon_window_size);     
+        DISPLAY_INT(incon_threshold);       
+        DISPLAY_INT(incon_min_support);     
+        DISPLAY_CB (add_corners);           
+        DISPLAY_INT(grid_size);             
+        DISPLAY_NUM(beta);                  
+        DISPLAY_NUM(gamma);                 
+        DISPLAY_NUM(sigma);                 
+        DISPLAY_NUM(sradius);               
+        DISPLAY_INT(match_texture);         
+        DISPLAY_INT(lr_threshold);          
+        DISPLAY_NUM(speckle_sim_threshold); 
+        DISPLAY_INT(speckle_size);          
+        DISPLAY_INT(ipol_gap_width);        
+        DISPLAY_CB (filter_median);         
+        DISPLAY_CB (filter_adaptive_mean);  
+        DISPLAY_CB (postprocess_only_left); 
+        DISPLAY_CB (subsampling);   
+
+#undef DISPLAY_INT        
+#undef DISPLAY_NUM       
+#undef DISPLAY_CB        
+    }
 
     uint n_pairs = p.filenames.size() / 2;
     disparity_images.resize(n_pairs);

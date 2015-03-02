@@ -64,7 +64,6 @@ int main(int argc, char * * argv)
         if(success) success = stereo.calculate_stereo_calibration(params);
         if(success) success = stereo.calculate_rectification(params);
         if(success) success = stereo.calculate_disparity(params);
-        if(success) success = stereo.calculate_stereo_calibration(params);
 
         for(uint i = 0; i < stereo.disparity_images.size() && success; ++i) {
             pts_3d.clear();

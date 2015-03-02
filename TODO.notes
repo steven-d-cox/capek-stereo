@@ -1,0 +1,12 @@
+
+(*) Fix fast-triangulate method
+(*) Always ignore points behind one or more cameras
+(*) Test triclops with bumblebee config file
+
+(*) python bindings
+(*) cut out cruft
+
+(*) three.js system of viewing projection
+ + How do you draw a conic (?)
+
+

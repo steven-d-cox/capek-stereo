@@ -94,6 +94,7 @@ struct Params
     int disp_P1;
     int disp_P2;
 
+    // @see libelas/elas.h for documentation on these parameters
     Elas::parameters elas_params;
 
     // Exporting options
@@ -111,98 +112,9 @@ struct Params
     // Funds testing function
     bool test_find_E;
 
-    bool operator==(const Params& o) const
-    {
-        if(filenames != o.filenames) return false;
-
-    single_camera;   
-    apply_undistort; 
-
-    int nx, ny;          
-    double sq_side;      
-
-    bool run_surf;
-    int surf_min_hessian;
-    double surf_dist_ratio;
-    bool surf_lmeds;
-
-    bool use_fusiello_rect; 
-
-
-    int disp_method; // 
-    int disp_min_disparity;
-    int disp_num_disparities;
-    int disp_SAD_window_size; 
-    int disp_12_max_diff;
-    int disp_prefilter_cap; 
-    int disp_prefilter_size; 
-    int disp_texture_threshold;
-    int disp_uniqueness_ratio; 
-    int disp_speckle_window_size; 
-    int disp_speckle_range; 
-    bool disp_full_DP;
-    int disp_P1;
-    int disp_P2;
-
-        return true;
-    }
-
-    Params() 
-        : show_help(false), 
-          okay(true),
-
-          input_filename(""),
-          output_filename("camera-calib.yml"),
-
-          filenames(),
-
-          recalc_K(false),
-          recalc_F(false),
-
-          single_camera(false),
-          apply_undistort(false),
-
-          nx(9),
-          ny(6), 
-          sq_side(0.023571429),
-
-          run_surf(true), // in theory we could get points another way
-          surf_min_hessian(100),
-          surf_dist_ratio(30),
-          surf_lmeds(false),
-
-        use_fusiello_rect(false),
-
-        disp_method(DISPARITY_METHOD_BM),
-        disp_min_disparity(-39),
-        disp_num_disparities(112),
-        disp_SAD_window_size(9), 
-        disp_12_max_diff(1),
-        disp_prefilter_cap(61), 
-        disp_prefilter_size(5), 
-        disp_texture_threshold(507),
-        disp_uniqueness_ratio(0), 
-        disp_speckle_window_size(0), 
-        disp_speckle_range(9), 
-        disp_full_DP(false),
-        disp_P1(0),
-        disp_P2(0),
-
-        elas_params(),
-
-        output_dir("/tmp"),
-        export_corner_detect(true), // only default TRUE
-        export_undistorted(false),
-        export_rectified(false),
-        export_surf(false),
-        export_xEx_costfn(false),
-        export_disparity(false),
-
-        show_point_cloud(false),
-
-        test_find_E(false)
-    {}
-
+    // -- Methods --
+    Params();       
+    bool operator==(const Params& o) const;
     string disp_method_name(int method_id = -1) const;
 };
 

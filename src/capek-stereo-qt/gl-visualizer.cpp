@@ -318,6 +318,12 @@ void This::initializeGL()
 
 void This::paintGL()
 {
+    static bool first_run = true;
+    if(first_run) {
+        initializeGL();
+        first_run = false;
+    }
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glLoadIdentity();

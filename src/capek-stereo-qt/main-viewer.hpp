@@ -58,7 +58,19 @@ public slots:
     void save_state();
     void restore_state();
 
-    // Catch-all update gui slot
-    void update_gui();
+    // Indicate dirty
+    void intrinsics_dirty();
+    void surf_dirty();
+    void stereo_calibration_dirty();
+    void rectification_dirty();
+    void disparity_dirty();
+
+    // Updating parts of the gui...
+    void update_intrinsics();
+    void update_surf();
+    void update_stereo_calibration();
+    void update_rectification();
+    void update_disparity();
+    void update_point_cloud();
 };
 

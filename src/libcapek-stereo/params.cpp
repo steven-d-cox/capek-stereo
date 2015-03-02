@@ -33,6 +33,109 @@
 
 using namespace std;
 
+Params::Params() : 
+    show_help(false), 
+    okay(true),
+
+    input_filename(""),
+    output_filename("camera-calib.yml"),
+
+    filenames(),
+
+    recalc_K(false),
+    recalc_F(false),
+
+    single_camera(false),
+    apply_undistort(false),
+
+    nx(9),
+    ny(6), 
+    sq_side(0.023571429),
+
+    run_surf(true), // in theory we could get points another way
+    surf_min_hessian(100),
+    surf_dist_ratio(30),
+    surf_lmeds(false),
+
+    use_fusiello_rect(false),
+
+    disp_method(DISPARITY_METHOD_BM),
+    disp_min_disparity(-39),
+    disp_num_disparities(112),
+    disp_SAD_window_size(9), 
+    disp_12_max_diff(1),
+    disp_prefilter_cap(61), 
+    disp_prefilter_size(5), 
+    disp_texture_threshold(507),
+    disp_uniqueness_ratio(0), 
+    disp_speckle_window_size(0), 
+    disp_speckle_range(9), 
+    disp_full_DP(false),
+    disp_P1(0),
+    disp_P2(0),
+
+    elas_params(Elas::MIDDLEBURY),
+
+    output_dir("/tmp"),
+    export_corner_detect(true), // only default TRUE
+    export_undistorted(false),
+    export_rectified(false),
+    export_surf(false),
+    export_xEx_costfn(false),
+    export_disparity(false),
+
+    show_point_cloud(false),
+
+    test_find_E(false)
+{}
+
+bool Params::operator==(const Params& o) const
+{
+
+#define TEST(field) if(field != o.field) return false;
+    TEST(filenames);
+
+    TEST(single_camera);
+    TEST(apply_undistort);
+
+    TEST(nx);
+    TEST(ny);
+    TEST(sq_side);
+
+    TEST(run_surf);
+    TEST(surf_min_hessian);
+    TEST(surf_dist_ratio);
+    TEST(surf_lmeds);
+
+    TEST(use_fusiello_rect);
+
+    TEST(disp_method); 
+    TEST(disp_min_disparity);
+    TEST(disp_num_disparities);
+    TEST(disp_SAD_window_size); 
+    TEST(disp_12_max_diff);
+    TEST(disp_prefilter_cap); 
+    TEST(disp_prefilter_size); 
+    TEST(disp_texture_threshold);
+    TEST(disp_uniqueness_ratio); 
+    TEST(disp_speckle_window_size); 
+    TEST(disp_speckle_range); 
+    TEST(disp_full_DP);
+    TEST(disp_P1);
+    TEST(disp_P2);
+
+    TEST(output_dir);
+    TEST(export_corner_detect);
+    TEST(export_undistorted);
+    TEST(export_rectified);
+    TEST(export_surf);
+    TEST(export_xEx_costfn);
+    TEST(export_disparity);
+#undef TEST
+
+    return true;
+}
+
 void print_usage(const char * exec)
 {
     Params p;

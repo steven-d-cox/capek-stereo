@@ -6,9 +6,10 @@
 VERSION ?= debug
 CC:=colorgcc
 
-SRCS:=main.cpp shared-data.cpp
+SRCS:=main.cpp 
 QTSR=generic-q-event-filter.cpp image-viewer.cpp gl-visualizer.cpp \
-	main-viewer.cpp
+	push-button-c11.cpp \
+	main-viewer.cpp shared-data.cpp
 
 CVD:=/usr/local
 OPENCV_LIBS:=-L$(CVD)/lib \
