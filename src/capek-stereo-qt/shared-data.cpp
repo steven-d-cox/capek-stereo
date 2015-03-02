@@ -47,6 +47,7 @@ This::SharedData()
       stereo_calibration_dirty(true),
       rectification_dirty(true), 
       disparity_dirty(true),
+      calc_pts_3d(false),
       params(),      
       im0(new QImage(0, 0, QImage::Format_ARGB32)), 
       im1(new QImage(0, 0, QImage::Format_ARGB32)), 
@@ -248,14 +249,17 @@ void This::worker_thread()
         }  
 
         // Get 3d points
-        // if(stereo.disparity_images.size() > 0) {
-        //     pts_3d.clear();
-        //     if(!stereo.calculate_point_cloud(local, 
-        //                                      stereo.disparity_images[0],
-        //                                      pts_3d))
-        //         return false;
-        //     set_point_cloud_results(pts_3d);
-        // }
+        if(calc_pts_3d) {
+            calc_pts_3d = false;
+            pts_3d.clear();
+            if(stereo.disparity_images.size() > 0) {
+                if(!stereo.calculate_point_cloud(local, 
+                                                 stereo.disparity_images[0],
+                                                 pts_3d))
+                    return false;
+                set_point_cloud_results(pts_3d);
+            }
+        }
 
 
         return true;

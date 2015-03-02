@@ -57,6 +57,7 @@ public:
         stereo_calibration_dirty,
         rectification_dirty, 
         disparity_dirty;
+    std::atomic<bool> calc_pts_3d;
 
     Params params;             // parameter block used by StereoCameraSystem
 
@@ -80,6 +81,8 @@ public:
     void operator=(const SharedData&&) = delete;
 
     void worker_thread();
+
+    // Thread-safe
 
 private:
     // These 'set' methods _must_ be called from the worker thread _only_

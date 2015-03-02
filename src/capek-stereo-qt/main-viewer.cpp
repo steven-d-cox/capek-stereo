@@ -111,6 +111,9 @@ public:
     ImageViewer * imv_rect0, * imv_rect1;
     ImageViewer * imv_disparity;
 
+    // Get point-cloud
+    QPushButtonC11 * button_grab_cloud;
+
     // Data
     vector<Vector3d> cloud;
     Vector3d cloud_centre;
@@ -568,12 +571,16 @@ void This::Pimpl::make_ui()
                            newCb(&cb_elas_postprocess_only_left)); 
             layout->addRow("subsampling", newCb(&cb_elas_subsampling));
 
+            layout->addRow("", newHLine());            
+
             form->setLayout(layout);
         }
 
         {
             auto * layout = new QVBoxLayout;
 	    layout->addWidget(form);
+            layout->addWidget(newWidget(&button_grab_cloud, 
+                                        "Calculate point cloud"));
 	    layout->addWidget(newSpacer());
 
             cpanel = new QWidget;
@@ -808,4 +815,8 @@ void This::Pimpl::make_ui()
     CONNECT_CB  (cb_elas_subsampling, disparity_dirty);
 
 #undef CONNECT_TEXT
+
+    button_grab_cloud->setOnClicked([&] (bool) {
+            shared_data.calc_pts_3d = true;
+        });
 }
