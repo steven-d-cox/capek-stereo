@@ -36,7 +36,12 @@
 #define DISPARITY_METHOD_BM 0
 #define DISPARITY_METHOD_SGBM 1
 #define DISPARITY_METHOD_ELAS 2
+#if USE_TRICLOPS == 1
+#define DISPARITY_METHOD_TRICLOPS 3
+#define DISPARITY_METHOD_MAX 3
+#else
 #define DISPARITY_METHOD_MAX 2
+#endif 
 
 // Application parameters
 struct Params
@@ -105,6 +110,42 @@ struct Params
 
     // Funds testing function
     bool test_find_E;
+
+    bool operator==(const Params& o) const
+    {
+        if(filenames != o.filenames) return false;
+
+    single_camera;   
+    apply_undistort; 
+
+    int nx, ny;          
+    double sq_side;      
+
+    bool run_surf;
+    int surf_min_hessian;
+    double surf_dist_ratio;
+    bool surf_lmeds;
+
+    bool use_fusiello_rect; 
+
+
+    int disp_method; // 
+    int disp_min_disparity;
+    int disp_num_disparities;
+    int disp_SAD_window_size; 
+    int disp_12_max_diff;
+    int disp_prefilter_cap; 
+    int disp_prefilter_size; 
+    int disp_texture_threshold;
+    int disp_uniqueness_ratio; 
+    int disp_speckle_window_size; 
+    int disp_speckle_range; 
+    bool disp_full_DP;
+    int disp_P1;
+    int disp_P2;
+
+        return true;
+    }
 
     Params() 
         : show_help(false), 

@@ -872,6 +872,13 @@ bool This::calculate_disparity(const Params& p)
             disparity_elas(view0, view1, disp, p.elas_params);
             break;
 
+#if USE_TRICLOPS == 1
+        case DISPARITY_METHOD_TRICLOPS:
+            disparity_triclops(view0, view1, disp);
+            break;
+#endif
+
+
         default:
             FATAL("Forgot to code disparity method");
         }

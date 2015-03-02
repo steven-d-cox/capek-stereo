@@ -16,11 +16,19 @@ CVD:=/usr/local
 
 DEP_INCLUDES:=-I$(CURDIR)/../libelas
 
+USE_TRICLOPS=$(shell cat ../config.h | grep USE_TRICLOPS | awk '{ print $$3 }')
+ifeq "$(USE_TRICLOPS)" "1"
+POINTGREY_INC=-I/usr/include/triclops -isystem/usr/include/flycapture
+else
+POINTGREY_INC=
+endif
+
 # ----------------------------- 
 CPP_SANITIZE:=
 CPP_COMP_FLAGS:=-m64 -fPIC -Wall -Wno-unused -fmax-errors=4 -msse2 -mssse3
 CPP_DEFINES:=
-CPP_INCLUDES:=-I$(CURDIR) $(DEP_INCLUDES) -I/usr/include/eigen3 -I$(CVD)/include
+CPP_INCLUDES:=-I$(CURDIR) $(DEP_INCLUDES) \
+	-I/usr/include/eigen3 -I$(CVD)/include $(POINTGREY_INC)
 
 # ----------------------------- build 
 BUILD_A:=1

@@ -38,8 +38,11 @@ endif
 DEP_LIBD:=$(BUILDD)/lib
 DEP_LINKD:=-Wl,-rpath,$(DEP_LIBD) -L$(DEP_LIBD)
 
+MOCD:=$(BUILDD)/moc
+
 OBJDIR:=$(BUILDD)/obj/$(TARGET)
 DEPDIR:=$(OBJDIR)
+MOC_OBJS:=$(patsubst %.cpp,${OBJDIR}/%.moc.o,$(QTSR))
 OBJ_FILES:=$(patsubst %.cpp,${OBJDIR}/%.o,$(CPP_FILES)) $(patsubst %.c,${OBJDIR}/%.o,$(C_FILES)) $(MOC_OBJS) $(LEX_OBJS)
 CPP_FLAGS_FIN:=-std=c++11 $(CPP_FLAGS) $(VERSION_FLAGS)
 C_FLAGS_FIN:=$(C_FLAGS) $(VERSION_FLAGS)
@@ -116,6 +119,7 @@ ${OBJDIR}/%.o: %.cpp $(CPP_PCH)
 
 ${OBJDIR}/%.moc.o: %.hpp $(CPP_PCH)
 	@mkdir -p "$$(dirname "$@")"
+	@mkdir -p "$(MOCD)"
 	@echo
 	@$(BANNER_IN)
 	moc $< > $(MOCD)/$(notdir $(basename $<)).moc.cpp

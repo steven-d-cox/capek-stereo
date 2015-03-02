@@ -308,6 +308,9 @@ string Params::disp_method_name(int method_id) const
     case DISPARITY_METHOD_BM: return "bm";
     case DISPARITY_METHOD_SGBM: return "sgbm";
     case DISPARITY_METHOD_ELAS: return "elas";
+#if USE_TRICLOPS == 1
+    case DISPARITY_METHOD_TRICLOPS: return "triclops";
+#endif
     default:
         fprintf(stderr, "FATAL ERROR, unknown disparity-method-id '%d'\n", 
                 method_id);

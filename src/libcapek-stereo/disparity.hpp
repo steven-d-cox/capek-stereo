@@ -84,4 +84,8 @@ void disparity_sgbm(const cv::Mat& grey0, const cv::Mat& grey1, cv::Mat& disp,
 void disparity_elas(const cv::Mat& grey0, const cv::Mat& grey1, cv::Mat& disp,
                     const Elas::parameters& p);
 
+#if USE_TRICLOPS == 1
+void disparity_triclops(const cv::Mat& grey0, const cv::Mat& grey1, 
+                        cv::Mat& disp);
+#endif
 

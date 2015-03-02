@@ -132,13 +132,6 @@ void disparity_elas(const Mat& grey0, const Mat& grey1, Mat& disp,
     float * D2_data = (float *) malloc(width * height * sizeof(float));
 
     // process
-    // Elas::parameters param;
-    // param.postprocess_only_left = false;
-    // param.disp_min = disp_min;
-    // param.disp_max = disp_max;
-    // param.support_threshold = support_threshold;
-    
-
     Elas elas(p);
     elas.process(ptr0, ptr1, D1_data, D2_data, dims);
 
@@ -152,4 +145,83 @@ void disparity_elas(const Mat& grey0, const Mat& grey1, Mat& disp,
     free(D1_data);
     free(D2_data);
 }
+
+#if USE_TRICLOPS == 1
+
+#include <triclops.h>
+#include <fc2triclops.h>
+
+// Macro to check, report on, and handle Triclops API error codes.
+#define _HANDLE_TRICLOPS_ERROR(description, error)                      \
+    {                                                                   \
+        if(error != TriclopsErrorOk) {                                  \
+            printf("*** Triclops Error '%s' at line %d :\n\t%s\n",      \
+                   triclopsErrorToString(error),                        \
+                   __LINE__,                                            \
+                   description);                                        \
+            exit(1);                                                    \
+        }                                                               \
+    }
+
+
+void disparity_triclops(const Mat& grey0, const Mat& grey1, Mat& disp)
+{
+    TriclopsContext   triclops;
+    TriclopsError     err;
+    TriclopsInput     triclops_input;
+
+    // TODO, need to test using a camera configuration file
+
+    { // Camera setup
+        int min_disp = 2, max_disp = 255;
+
+        err = triclopsSetCameraConfiguration(triclops, TriCfg_2CAM_HORIZONTAL);
+        _HANDLE_TRICLOPS_ERROR("set configuration", err);        
+
+        err = triclopsSetResolutionAndPrepare(triclops, 768, 1024, 768, 1024);
+        _HANDLE_TRICLOPS_ERROR("set resolution", err);
+
+        err = triclopsSetRectify(triclops, true);
+        _HANDLE_TRICLOPS_ERROR("set rectify", err);
+
+        err = triclopsSetLowpass(triclops, true);
+        _HANDLE_TRICLOPS_ERROR("set lowpass filter", err);
+
+        err = triclopsSetEdgeCorrelation(triclops, true);
+        _HANDLE_TRICLOPS_ERROR("set edge-correlation", err);
+
+        triclopsSetDisparity(triclops, min_disp, max_disp);
+        _HANDLE_TRICLOPS_ERROR("set disparity", err);
+
+        triclopsSetEdgeMask(triclops, 13);
+        _HANDLE_TRICLOPS_ERROR("set edge-mask", err);
+
+        triclopsSetStereoMask(triclops, 13);
+        _HANDLE_TRICLOPS_ERROR("set stereo-mask", err);
+
+        triclopsSetTextureValidation(triclops, 1);
+        _HANDLE_TRICLOPS_ERROR("set texture-validation", err);
+
+        triclopsSetSurfaceValidation(triclops, 1);
+        _HANDLE_TRICLOPS_ERROR("set surface-validation", err);
+
+        triclopsSetSurfaceValidationSize(triclops, 300);
+        _HANDLE_TRICLOPS_ERROR("set surface-validation-size", err);
+
+        triclopsSetDisparityMappingOn(triclops, 0);
+        _HANDLE_TRICLOPS_ERROR("set disparity-mapping on", err);
+
+        // triclopsSetDisparityMapping(triclops, min_disp, max_disp);
+        // _HANDLE_TRICLOPS_ERROR("set disparity-mapping", err);
+    }
+
+    printf("HERE\n");
+
+    // 
+
+
+    triclopsDestroyContext(triclops);
+    exit(0);
+}
+#endif
 
